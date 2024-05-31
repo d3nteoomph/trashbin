@@ -1,0 +1,87 @@
+- Ооо, набор в профсофт открылся, пойду на девопса
+*присылают задание*
+- Г*вно вопрос, микротики настраивали, VM настраивали, сетевую топологию выстраивали, что сложного?
+Через 3 часа:
+
+1 ЗАДАНИЕ
+su -
+apt update
+apt install -y vlan bridge-utils
+modprobe 8021q
+ip link add link eth0 name eth0.10 type vlan id 10
+ip link add link eth0 name eth0.20 type vlan id 20
+ip addr add 10.0.0.2/24 dev eth0.10
+ip addr add 20.0.0.2/24 dev eth0.20
+ip link set eth0.10 up
+ip link set eth0.20 up
+ip link add link eth0 name eth0.10 type vlan id 10
+ip addr add 10.0.0.3/24 dev eth0.10
+ip link set eth0.10 up
+ip link add link eth0 name eth0.20 type vlan id 20
+ip addr add 20.0.0.4/24 dev eth0.20
+ip link set eth0.20 up
+brctl addbr br0
+brctl addif br0 eth1.10
+brctl addif br0 eth1.20
+ip addr add 10.0.0.1/24 dev br0.10
+ip addr add 20.0.0.1/24 dev br0.20
+ip link set br0 up
+ip link set eth1 up
+ip link set eth1.10 up
+ip link set eth1.20 up
+brctl addbr br1
+brctl addif br1 eth2
+ip addr add 30.0.0.1/24 dev br1
+ip link set br1 up
+ip link set eth2 up
+echo 1 > /proc/sys/net/ipv4/ip_forward
+ip route add 30.0.0.0/24 via 30.0.0.1
+# vh - VLAN 30
+ip addr add 30.0.0.2/24 dev eth0
+ip link set eth0 up
+
+ЗАДАНИЕ 2
+
+sudo apt update
+sudo apt install -y libvirt-clients libvirt-daemon-system qemu-kvm dnsmasq
+wget https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-virt-3.19.1-x86_64.iso -O alpine-virt.iso
+sudo brctl addbr br1
+sudo ip link set dev br1 up
+sudo virt-install \
+  --name alpine-vm \
+  --ram 512 \
+  --disk path=/var/lib/libvirt/images/alpine-vm.qcow2,size=8 \
+  --vcpus 1 \
+  --os-type linux \
+  --os-variant generic \
+  --network bridge=br1,model=virtio \
+  --graphics none \
+  --console pty,target_type=serial \
+  --cdrom alpine-virt.iso
+sudo nano /etc/dnsmasq.conf
+interface=br1
+dhcp-range=192.168.100.50,192.168.100.150,12h
+sudo systemctl restart dnsmasq
+sudo ip netns add ns1
+sudo ip link add veth0 type veth peer name veth1
+sudo ip link set veth1 netns ns1
+sudo ip addr add 192.168.100.1/24 dev veth0
+sudo ip link set dev veth0 up
+sudo ip netns exec ns1 ip addr add 192.168.100.2/24 dev veth1
+sudo ip netns exec ns1 ip link set dev veth1 up
+sudo ip netns exec ns1 ip link set dev lo up
+sudo brctl addif br1 veth0
+sudo ip netns exec ns1 ping -c 4 192.168.100.50
+
+БОНУС(BONES?)
+Проверяем конекшен ту зе интернет
+sudo nano /etc/dnsmasq.conf
+interface=br1
+dhcp-range=192.168.100.50,192.168.100.150,12h
+dhcp-option=3,192.168.100.1   # шлюз по умолчанию
+dhcp-option=6,8.8.8.8,8.8.4.4 # DNS-серверы (Google DNS)
+sudo systemctl restart dnsmasq
+sudo virsh console alpine-vm
+ip addr show
+ping -c 4 8.8.8.8
+ping -c 4 google.com
