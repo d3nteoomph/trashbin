@@ -1,0 +1,43 @@
+FROM composer:latest as composer_upstream
+
+FROM php:8.3-fpm-alpine as php_upstream
+ENV COMPOSER_ALLOW_SUPERUSER=1
+COPY --from=composer_upstream /usr/bin/composer /usr/bin/composer
+COPY ./app /var/www/app
+WORKDIR /var/www/app
+RUN composer install
+# --prefer-source --no-interaction
+
+
+ 
+
+
+#FROM nginx:alpine as nginx_upstream
+#FROM php_upstream as php_base
+
+
+
+
+
+#RUN apk add --no-cache \
+#       make \
+#       autoconf \
+#       g++ \
+#       gcc \
+#       acl \
+#       zip  \
+#       postgresql15 \
+#       postgresql15-contrib \
+#       postgresql15-openrc \
+#       postgresql-dev \
+#       composer \
+#       libpq
+       
+       
+
+#RUN docker-php-ext-configure \
+#        pgsql -with-pgsql=/usr/local/pgsql ;
+#RUN docker-php-ext-install \ 
+#    pdo \
+#    pdo_pgsql \
+#    pgsql;

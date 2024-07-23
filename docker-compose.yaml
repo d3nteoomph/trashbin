@@ -1,0 +1,58 @@
+version: '3.9'
+
+
+services:
+ nginx:
+     build:
+       context: .
+       dockerfile: ./build/nginx/dockerfile
+     container_name: nginx_gachi_app
+     ports:  
+     - "8080:80"
+     volumes:
+       - ./app/public:/var/www/app/public:ro
+     networks:
+     - default
+
+
+ db:
+     image: postgres:15.2-alpine3.17
+     restart: always
+     environment:
+      postgres_db: Dungeon
+      postgres_user: Billy
+      POSTGRES_PASSWORD: oralcumshot 
+     ports:
+       - 5432:89
+     container_name: postgres_gachi_app
+     volumes:
+     - ./build/:/postgres/
+     networks:
+     - default
+
+ php: 
+     build:
+       context: .
+       dockerfile: ./build/php/dockerfile 
+     container_name: php_gachi_app
+     ports:
+     - 9000:90
+#     volumes:
+#     - .:/var/www/
+     networks:
+     - default
+
+
+ #Да, я люблю GUI. И что?
+ adminer:
+     image: adminer
+     restart: always
+     ports:
+       - 9090:91
+     environment:
+      Adminer_default_server: db
+     depends_on:
+      - db
+
+
+

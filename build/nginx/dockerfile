@@ -1,0 +1,9 @@
+FROM nginx:stable-alpine
+
+RUN apk add --no-cache mc nginx
+
+COPY ./build/nginx/default.conf /etc/nginx/conf.d/
+
+EXPOSE 80/tcp
+
+CMD ["nginx","-g","daemon off;"]
